@@ -1,0 +1,11 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+backend/config.json
+backend/trade_history.json
+backend/__pycache__/
+frontend/node_modules/
+frontend/dist/
+.DS_Store

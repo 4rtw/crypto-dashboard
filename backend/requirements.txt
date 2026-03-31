@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-binance
+pandas<3.0.0
+pandas-ta
+python-dotenv
+pydantic
+websockets
+python-multipart
+httpx
