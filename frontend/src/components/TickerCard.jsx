@@ -1,8 +1,19 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Info, ShieldCheck, Zap } from 'lucide-react';
 
+
+const ChangeLabel = ({ label, value }) => {
+    const isUp = value >= 0;
+    return (
+        <div className={`flex items-center px-1.5 py-0.5 rounded text-[10px] font-black border ${isUp ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+            <span className="text-gray-400 mr-1 italic uppercase">{label}</span>
+            {isUp ? '+' : ''}{value?.toFixed(2)}%
+        </div>
+    );
+};
+
 const TickerCard = ({ symbol, data }) => {
-  const { price, change, signal, rsi, macd, confidence, winrate, states, sma_20, sma_50, market, timeframe } = data || {};
+  const { price, change, changes, signal, rsi, macd, confidence, winrate, states, sma_20, sma_50, market, timeframe } = data || {};
   
   const getSignalColor = (s) => {
     if (s === 'BUY') return 'text-green-600 bg-green-100 border-green-200';
@@ -21,11 +32,11 @@ const TickerCard = ({ symbol, data }) => {
                <h3 className="text-2xl font-black text-gray-900 tracking-tight">{symbol}</h3>
                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest">{market || 'Spot'}</span>
            </div>
-           <div className="flex items-center mt-1">
-              <span className={`flex items-center text-sm font-bold ${isUp ? 'text-green-500' : 'text-red-500'}`}>
-                {isUp ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-                {change?.toFixed(2)}% <span className="text-gray-400 font-normal ml-1">({timeframe || '1h'})</span>
-              </span>
+                                 <div className="flex flex-wrap gap-2 mt-2">
+              <ChangeLabel label="1h" value={changes?.['1h']} />
+              <ChangeLabel label="4h" value={changes?.['4h']} />
+              <ChangeLabel label="8h" value={changes?.['8h']} />
+              <ChangeLabel label="24h" value={changes?.['24h'] || change} />
            </div>
         </div>
         <div className="flex flex-col items-end">
@@ -89,6 +100,34 @@ const TickerCard = ({ symbol, data }) => {
                 </span>
                 <span className="font-mono font-bold text-gray-700">{macd?.toFixed(2)}</span>
             </div>
+        </div>
+
+        {/* New Confluences */}
+        <div className="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">
+            <span className="text-gray-500 font-bold uppercase text-[10px] tracking-tight flex items-center">
+                <Zap className="w-3 h-3 mr-1 text-yellow-500" /> RSI Divergence
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black ${states?.divergence === 'BULLISH' ? 'bg-green-100 text-green-600' : (states?.divergence === 'BEARISH' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400')}`}>
+                {states?.divergence || 'NONE'}
+            </span>
+        </div>
+
+        <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-500 font-bold uppercase text-[10px] tracking-tight flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1 text-blue-500" /> Volume Spike
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black ${states?.volume === 'HIGH' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                {states?.volume || 'LOW'}
+            </span>
+        </div>
+
+        <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-500 font-bold uppercase text-[10px] tracking-tight flex items-center">
+                <ShieldCheck className="w-3 h-3 mr-1 text-indigo-500" /> H4 Trend Filter
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black ${states?.h4_trend === 'BULLISH' ? 'bg-green-100 text-green-600' : (states?.h4_trend === 'BEARISH' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400')}`}>
+                {states?.h4_trend || 'NEUTRAL'}
+            </span>
         </div>
 
         <div className="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">

@@ -7,9 +7,14 @@ const TradeHistory = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/history');
+            const res = await fetch('/api/history');
             const data = await res.json();
-            setHistory(data);
+            if (Array.isArray(data)) {
+                setHistory(data);
+            } else {
+                console.error("Trade history data is not an array:", data);
+                setHistory([]);
+            }
         } catch (e) {
             console.error("Failed to fetch history:", e);
         } finally {

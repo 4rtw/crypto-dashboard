@@ -8,7 +8,7 @@ const NotificationSettings = () => {
 
     useEffect(() => {
         // Fetch current webhook on mount
-        fetch('http://localhost:8000/api/webhook')
+        fetch('/api/webhook')
             .then(res => res.json())
             .then(data => setWebhookUrl(data.url || ''))
             .catch(err => console.error("Could not fetch webhook:", err));
@@ -17,7 +17,7 @@ const NotificationSettings = () => {
     const saveWebhook = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/webhook', {
+            const res = await fetch('/api/webhook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: webhookUrl })

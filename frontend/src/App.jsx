@@ -3,13 +3,14 @@ import useBinanceSocket from './hooks/useBinanceSocket';
 import TickerCard from './components/TickerCard';
 import TradeForm from './components/TradeForm';
 import TradeHistory from './components/TradeHistory';
+import SignalHistory from './components/SignalHistory';
 import NotificationSettings from './components/NotificationSettings';
 
 // Using lucide-react for icons
 import { Activity as ActivityIcon, ShieldCheck as ShieldIcon, Globe as GlobeIcon } from 'lucide-react';
 
 function App() {
-  const { data: tickers, status } = useBinanceSocket('ws://localhost:8000/ws/tickers');
+  const { data: tickers, status } = useBinanceSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/tickers`);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
@@ -46,6 +47,7 @@ function App() {
           <div className="lg:col-span-2 space-y-8">
             <TradeForm />
             <TradeHistory />
+            <SignalHistory />
           </div>
           <div className="space-y-6">
             <div className="bg-blue-600 p-6 rounded-3xl text-white shadow-xl overflow-hidden relative border-4 border-blue-500">
