@@ -3,12 +3,46 @@ import pandas_ta as ta
 import numpy as np
 
 def calculate_indicators(df):
+    if df is None or df.empty: return df
+    try:
+        # Pre-emptive numeric conversion and NaN cleaning
+        for c in ["open", "high", "low", "close", "volume"]:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+        
+        df = df.dropna(subset=['close'])
+        for c in ["open", "high", "low", "close", "volume"]:
+             df[c] = df[c].astype(float)
+             
+        if len(df) < 5: return df
+
+        df['rsi'] = ta.rsi(df['close'], length=14)
+        macd = ta.macd(df['close'], fast=12, slow=26, signal=9)
+        if macd is not None:
+            df = pd.concat([df, macd], axis=1)
+        
+        df['sma_20'] = ta.sma(df['close'], length=20)
+        df['sma_50'] = ta.sma(df['close'], length=50)
+        df['sma_200'] = ta.sma(df['close'], length=200)
+        df['vol_sma'] = ta.sma(df['volume'], length=20)
+        
+        # Ensure TA columns are also numeric to avoid isnan errors later
+        for c in ['rsi', 'sma_20', 'sma_50', 'sma_200', 'vol_sma', 'MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors='coerce').astype(float)
+    except Exception as e:
+        print(f"Logic Error in indicators: {e}")
+    return df
+    for c in ["open", "high", "low", "close", "volume"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype(float)
     if df.empty: return df
     df['rsi'] = ta.rsi(df['close'], length=14)
     macd = ta.macd(df['close'], fast=12, slow=26, signal=9)
     df = pd.concat([df, macd], axis=1)
     df['sma_20'] = ta.sma(df['close'], length=20)
     df['sma_50'] = ta.sma(df['close'], length=50)
+    df['sma_200'] = ta.sma(df['close'], length=200)
     df['vol_sma'] = ta.sma(df['volume'], length=20)
     return df
 
@@ -77,13 +111,25 @@ def generate_signal_data(df, h4_df=None):
     # Volume Validation
     volume_ok = volume > vol_sma
     
-    # H4 Trend Filter
+    # H4 Trend + RSI Filter + macro regime (SMA50 vs SMA200 on H4)
     h4_trend = "NEUTRAL"
+    h4_rsi = 50  # neutral default
+    macro_regime = "NEUTRAL"  # BULL = SMA50 > SMA200, BEAR = opposite
     if h4_df is not None and not h4_df.empty:
         h4_df = calculate_indicators(h4_df)
         if len(h4_df) > 0:
             h4_last = h4_df.iloc[-1]
             h4_trend = "BULLISH" if h4_last['close'] > h4_last['sma_50'] else "BEARISH"
+            h4_rsi = float(h4_last['rsi']) if not pd.isna(h4_last['rsi']) else 50
+            if not pd.isna(h4_last['sma_200']):
+                macro_regime = "BULL" if h4_last['sma_50'] > h4_last['sma_200'] else "BEAR"
+
+    # 2-bar confirmation: previous bar must share same RSI/MACD direction
+    prev_rsi = prev_row['rsi']
+    prev_macd_line = prev_row['MACD_12_26_9']
+    prev_macd_signal_val = prev_row['MACDs_12_26_9']
+    buy_confirmed  = prev_rsi < 45 and prev_macd_line > prev_macd_signal_val
+    sell_confirmed = prev_rsi > 55 and prev_macd_line < prev_macd_signal_val
 
     states = {
         "rsi": "OVERBOUGHT" if rsi > 70 else ("OVERSOLD" if rsi < 30 else "NEUTRAL"),
@@ -93,7 +139,9 @@ def generate_signal_data(df, h4_df=None):
         "trend": "BULLISH" if sma_20 > sma_50 else "BEARISH",
         "divergence": divergence,
         "volume": "HIGH" if volume_ok else "LOW",
-        "h4_trend": h4_trend
+        "h4_trend": h4_trend,
+        "h4_rsi": round(h4_rsi, 1),
+        "macro_regime": macro_regime,
     }
     
     # Confidence Score (Dynamic based on Multiple Confluences)
@@ -123,16 +171,21 @@ def generate_signal_data(df, h4_df=None):
     confidence = min(score, 100)
     
     # Signal Generation Logic
+    # Improvements vs V1.3:
+    #   1. volume_ok now mandatory (was in README but not enforced)
+    #   2. H4 RSI guard: blocks BUY when H4 already overbought (>65), SELL when oversold (<35)
+    #   3. 2-bar confirmation: prev bar must show same RSI/MACD direction
+    #   4. Macro regime filter: BUY blocked in BEAR regime, SELL blocked in BULL regime
     signal = "HOLD"
-    if rsi < 40 and macd_line > macd_signal:
-        # Require either divergence OR H4 trend alignment for BUY
+    if rsi < 40 and macd_line > macd_signal and volume_ok and buy_confirmed:
         if divergence == "BULLISH" or h4_trend == "BULLISH":
-            signal = "BUY"
-            
-    elif rsi > 60 and macd_line < macd_signal:
-        # Require either divergence OR H4 trend alignment for SELL
+            if h4_rsi < 65 and macro_regime != "BEAR":
+                signal = "BUY"
+
+    elif rsi > 60 and macd_line < macd_signal and volume_ok and sell_confirmed:
         if divergence == "BEARISH" or h4_trend == "BEARISH":
-            signal = "SELL"
+            if h4_rsi > 35 and macro_regime != "BULL":
+                signal = "SELL"
     
     # Calculate Winrate on a 200-period window
     winrate = calculate_backtest_winrate(df, window=200)

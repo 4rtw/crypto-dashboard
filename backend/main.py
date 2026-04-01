@@ -1,3 +1,4 @@
+import numpy as np
 import asyncio
 import os
 import json
@@ -17,7 +18,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-        allow_credentials=True,
+            allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -34,6 +35,25 @@ def load_json(path):
         except: return [] if "history" in path else ({} if "config" in path else [])
     return [] if "history" in path else ({} if "config" in path else [])
 
+
+
+def json_safe(data):
+    if isinstance(data, dict):
+        return {k: json_safe(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [json_safe(v) for v in data]
+    elif isinstance(data, float):
+        if np.isnan(data) or np.isinf(data): return 0.0
+        return float(round(data, 4))
+    return data
+
+def sanitize_float(val):
+    try:
+        f = float(val)
+        if pd.isna(f) or np.isinf(f): return 0.0
+        return f
+    except: return 0.0
+
 def save_json(path, data):
     with open(path, "w") as f: json.dump(data, f)
 
@@ -41,7 +61,7 @@ def save_json(path, data):
 app_config = load_json(CONFIG_FILE)
 app_history = load_json(HISTORY_FILE)
 sig_history_init = load_json(SIGNAL_HISTORY_FILE)
-previous_signals = {"BTCUSDT": "HOLD", "ETHUSDT": "HOLD"}
+previous_signals = {"BTCUSDT": "HOLD", "ETHUSDT": "HOLD", "SOLUSDT": "HOLD", "BNBUSDT": "HOLD"}
 
 # Initialize previous_signals from history if available
 for symbol in previous_signals:
@@ -53,6 +73,8 @@ for symbol in previous_signals:
 tickers_data: Dict[str, Any] = {
     "BTCUSDT": {"price": 0.0, "change": 0.0, "signal": "HOLD", "timeframe": "1h", "market": "Spot"},
     "ETHUSDT": {"price": 0.0, "change": 0.0, "signal": "HOLD", "timeframe": "1h", "market": "Spot"},
+    "SOLUSDT": {"price": 0.0, "change": 0.0, "signal": "HOLD", "timeframe": "1h", "market": "Spot"},
+    "BNBUSDT": {"price": 0.0, "change": 0.0, "signal": "HOLD", "timeframe": "1h", "market": "Spot"},
 }
 
 class WebhookRequest(BaseModel): url: str
@@ -92,73 +114,65 @@ async def update_tickers_and_signals():
     client = await AsyncClient.create()
     try:
         while True:
-            for symbol in ["BTCUSDT", "ETHUSDT"]:
+            for symbol in ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]:
                 try:
-                    # Fetch Variations (4h, 8h)
-                    klines_4h = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_4HOUR, limit=2)
-                    klines_8h = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_8HOUR, limit=2)
+                    # Variations 4h, 8h (quick check)
+                    k4h = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_4HOUR, limit=2)
+                    k8h = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_8HOUR, limit=2)
                     
-                    def get_change(klines):
-                        if len(klines) < 2: return 0.0
-                        prev_close = float(klines[0][4])
-                        curr_price = float(klines[1][4])
-                        return ((curr_price / prev_close) - 1) * 100
-
-                    change_4h = get_change(klines_4h)
-                    change_8h = get_change(klines_8h)
-
-                    # Fetch 1h klines for technical signals
-                    klines = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_1HOUR, limit=250)
-                    df = pd.DataFrame(klines, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'q_vol', 'no_trades', 'taker_buy_base', 'taker_buy_quote', 'ignore'])
-                    df[['close', 'volume']] = df[['close', 'volume']].astype(float)
+                    def get_change(ks):
+                        if len(ks) < 2: return 0.0
+                        return ((float(ks[1][4]) / float(ks[0][4])) - 1) * 100
                     
-                    # Fetch 4h klines for trend filtering
-                    klines_h4_full = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_4HOUR, limit=100)
-                    h4_df = pd.DataFrame(klines_h4_full, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'q_vol', 'no_trades', 'taker_buy_base', 'taker_buy_quote', 'ignore'])
-                    h4_df[['close', 'volume']] = h4_df[['close', 'volume']].astype(float)
+                    c4h, c8h = get_change(k4h), get_change(k8h)
 
-                    change_1h = 0.0
+                    # H1 Core Data
+                    k1h = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_1HOUR, limit=250)
+                    df = pd.DataFrame(k1h, columns=['time','open','high','low','close','volume','ct','qv','nt','tb','tq','i'])
+                    for c in ['open','high','low','close','volume']:
+                        df[c] = pd.to_numeric(df[c], errors='coerce').astype(float)
+                    
+                    # H4 Trend Data
+                    kh4 = await client.get_klines(symbol=symbol, interval=AsyncClient.KLINE_INTERVAL_4HOUR, limit=250)
+                    h4_df = pd.DataFrame(kh4, columns=['time','open','high','low','close','volume','ct','qv','nt','tb','tq','i'])
+                    for c in ['open','high','low','close','volume']:
+                        h4_df[c] = pd.to_numeric(h4_df[c], errors='coerce').astype(float)
+
+                    c1h = 0.0
                     if len(df) >= 2:
-                        change_1h = ((df['close'].iloc[-1] / df['close'].iloc[-2]) - 1) * 100
+                        c1h = ((df['close'].iloc[-1] / df['close'].iloc[-2]) - 1) * 100
                     
                     df = calculate_indicators(df)
-                    signal, confidence, winrate, states = generate_signal_data(df, h4_df=h4_df)
-                    ticker = await client.get_ticker(symbol=symbol)
-                    price = float(ticker['lastPrice'])
+                    sig, conf, win, states = generate_signal_data(df, h4_df=h4_df)
                     
-                    if signal != previous_signals[symbol]:
-                        old_sig = previous_signals[symbol]
-                        await send_discord_alert(symbol, old_sig, signal, price)
-                        previous_signals[symbol] = signal
+                    tick = await client.get_ticker(symbol=symbol)
+                    px = sanitize_float(tick['lastPrice'])
+                    
+                    if sig != previous_signals[symbol]:
+                        old = previous_signals[symbol]
+                        await send_discord_alert(symbol, old, sig, px)
+                        previous_signals[symbol] = sig
                         
-                        # Record Signal Change in History
-                        sig_entry = {
+                        entry = {
                             "timestamp": datetime.now().isoformat(),
-                            "symbol": symbol,
-                            "old_signal": old_sig,
-                            "new_signal": signal,
-                            "price": price
+                            "symbol": symbol, "old_signal": old, "new_signal": sig, "price": px
                         }
-                        sig_history = load_json(SIGNAL_HISTORY_FILE)
-                        sig_history.insert(0, sig_entry)
-                        save_json(SIGNAL_HISTORY_FILE, sig_history[:100]) # Keep last 100 entries
+                        sh = load_json(SIGNAL_HISTORY_FILE)
+                        sh.insert(0, entry)
+                        save_json(SIGNAL_HISTORY_FILE, sh[:100])
                     
                     tickers_data[symbol] = {
-                        "market": "Spot", "timeframe": "1h", "price": price,
-                        "change": float(ticker['priceChangePercent']), 
-                        "changes": {"1h": change_1h, "4h": change_4h, "8h": change_8h, "24h": float(ticker['priceChangePercent'])}, 
-                        "signal": signal,
-                        "confidence": confidence, "winrate": winrate, "states": states,
+                        "market": "Spot", "timeframe": "1h", "price": px,
+                        "change": sanitize_float(tick['priceChangePercent']),
+                        "changes": {"1h": c1h, "4h": c4h, "8h": c8h, "24h": sanitize_float(tick['priceChangePercent'])},
+                        "signal": sig, "confidence": conf, "winrate": win, "states": states,
+                        "rsi": sanitize_float(df['rsi'].iloc[-1]) if 'rsi' in df.columns and not pd.isna(df['rsi'].iloc[-1]) else 0,
+                        "macd": sanitize_float(df['MACD_12_26_9'].iloc[-1]) if 'MACD_12_26_9' in df.columns and not pd.isna(df['MACD_12_26_9'].iloc[-1]) else 0,
+                        "sma_20": sanitize_float(df['sma_20'].iloc[-1]) if 'sma_20' in df.columns and not pd.isna(df['sma_20'].iloc[-1]) else 0,
+                        "sma_50": sanitize_float(df['sma_50'].iloc[-1]) if 'sma_50' in df.columns and not pd.isna(df['sma_50'].iloc[-1]) else 0,
                     }
-                    if not df.empty and len(df) > 0 and 'rsi' in df.columns:
-                        tickers_data[symbol].update({
-                            "rsi": float(df['rsi'].iloc[-1]), 
-                            "macd": float(df['MACD_12_26_9'].iloc[-1]),
-                            "sma_20": float(df['sma_20'].iloc[-1]), 
-                            "sma_50": float(df['sma_50'].iloc[-1]),
-                        })
                 except Exception as e:
-                    print(f'Error updating {symbol}: {e}')
+                    print(f"Error updating {symbol}: {e}")
             await asyncio.sleep(10)
     finally: await client.close_connection()
 
@@ -171,12 +185,12 @@ async def set_webhook(req: WebhookRequest):
 @app.get("/api/webhook")
 async def get_webhook(): return {"url": app_config.get("discord_webhook", "")}
 
-@app.websocket("/ws/tickers")
+@app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_json(tickers_data)
+            await websocket.send_json(json_safe(tickers_data))
             await asyncio.sleep(2)
     except WebSocketDisconnect: pass
 

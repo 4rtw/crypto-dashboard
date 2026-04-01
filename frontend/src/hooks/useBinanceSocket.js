@@ -4,29 +4,45 @@ const useBinanceSocket = (url) => {
   const [data, setData] = useState({});
   const [status, setStatus] = useState('disconnected');
   const ws = useRef(null);
+  const reconnectTimeout = useRef(null);
 
-  useEffect(() => {
-    ws.current = new WebSocket(url);
+  const connect = () => {
+    
+    setStatus('connecting');
+    const socket = new WebSocket(url);
+    ws.current = socket;
 
-    ws.current.onopen = () => {
+    socket.onopen = () => {
+      
       setStatus('connected');
     };
 
-    ws.current.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      setData(msg);
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        setData(msg);
+      } catch (e) {
+        console.error('WebSocket parse error:', e);
+      }
     };
 
-    ws.current.onclose = () => {
-        setStatus('disconnected');
+    socket.onclose = (e) => {
+      
+      setStatus('reconnecting');
+      reconnectTimeout.current = setTimeout(connect, 5000);
     };
 
-    ws.current.onerror = (error) => {
-        setStatus('error');
+    socket.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+      socket.close();
     };
+  };
 
+  useEffect(() => {
+    connect();
     return () => {
       if (ws.current) ws.current.close();
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
     };
   }, [url]);
 

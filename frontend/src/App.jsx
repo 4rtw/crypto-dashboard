@@ -10,7 +10,7 @@ import NotificationSettings from './components/NotificationSettings';
 import { Activity as ActivityIcon, ShieldCheck as ShieldIcon, Globe as GlobeIcon } from 'lucide-react';
 
 function App() {
-  const { data: tickers, status } = useBinanceSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/tickers`);
+  const { data: tickers, status } = useBinanceSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8 font-sans">
@@ -21,7 +21,7 @@ function App() {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center">
               <ActivityIcon className="w-8 h-8 mr-3 text-blue-600" />
-              Crypto Dashboard <span className="ml-3 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-lg uppercase tracking-widest font-black">Spot V1</span>
+              Crypto Dashboard <span className="ml-3 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-lg uppercase tracking-widest font-black">Spot V1.7.6</span>
             </h1>
             <p className="text-sm text-gray-400 mt-1 uppercase font-black tracking-widest flex items-center">
               <GlobeIcon className="w-3 h-3 mr-2" /> Real-time Binance Surveillance
@@ -37,6 +37,8 @@ function App() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TickerCard symbol="BTC/USDT" data={tickers.BTCUSDT} />
           <TickerCard symbol="ETH/USDT" data={tickers.ETHUSDT} />
+          <TickerCard symbol="SOL/USDT" data={tickers.SOLUSDT} />
+          <TickerCard symbol="BNB/USDT" data={tickers.BNBUSDT} />
         </section>
 
         {/* Settings & Alerts Section */}
