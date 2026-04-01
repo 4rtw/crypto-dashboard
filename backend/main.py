@@ -155,7 +155,8 @@ async def update_tickers_and_signals():
                         
                         entry = {
                             "timestamp": datetime.now().isoformat(),
-                            "symbol": symbol, "old_signal": old, "new_signal": sig, "price": px
+                            "symbol": symbol, "old_signal": old, "new_signal": sig, "price": px,
+                            "confidence": sanitize_float(conf), "winrate": sanitize_float(win)
                         }
                         sh = load_json(SIGNAL_HISTORY_FILE)
                         sh.insert(0, entry)

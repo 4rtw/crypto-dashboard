@@ -64,6 +64,8 @@ const SignalHistory = () => {
                                 <th className="pb-3 px-2">Heure</th>
                                 <th className="pb-3 px-2">Symbole</th>
                                 <th className="pb-3 px-2">Transition</th>
+                                <th className="pb-3 px-2">Conf.</th>
+                                <th className="pb-3 px-2">Winrate</th>
                                 <th className="pb-3 px-2">Prix</th>
                             </tr>
                         </thead>
@@ -84,6 +86,22 @@ const SignalHistory = () => {
                                                 {getSignalIcon(s.new_signal)}
                                                 {s.new_signal}
                                             </span>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-2">
+                                        <div className="flex items-center">
+                                            <span className="text-[11px] font-black text-blue-600 mr-2">{s.confidence || 0}%</span>
+                                            <div className="w-12 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-500" style={{ width: `${s.confidence || 0}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-2">
+                                        <div className="flex items-center">
+                                            <span className="text-[11px] font-black text-purple-600 mr-2">{s.winrate || 0}%</span>
+                                            <div className="w-12 h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-purple-500" style={{ width: `${s.winrate || 0}%` }}></div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="py-4 px-2 font-mono text-gray-700 font-bold">
