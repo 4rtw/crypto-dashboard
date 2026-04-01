@@ -6,15 +6,18 @@ A production-ready, high-performance crypto trading and surveillance dashboard f
 ![Timeframe](https://img.shields.io/badge/Timeframe-1h%2F4h%2F8h-green)
 ![Tech](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React-orange)
 
-## ✨ New Features (V1.3)
+## ✨ New Features (V1.7)
 -   **🎯 Advanced Strategy Confluences**:
     -   **🛡️ RSI Divergence Detection**: Identifies Bullish/Bearish divergences between price and RSI for high-conviction entries.
     -   **📊 Volume Validation**: Signals are now filtered by volume spikes relative to a 20-period Simple Moving Average.
     -   **📡 H4 Trend Filtering**: Integrates a higher-timeframe filter (H4 SMA 50) to ensure signals align with the broader market direction.
--   **📉 Multi-Timeframe Variations**: Real-time tracking of price changes across **1h, 4h, 8h, and 24h** intervals.
+-   **🛡️ Data Integrity & Stability**:
+    -   **Recursive JSON Sanitizer**: Global backend protection against `NaN` and `Infinity` values, preventing silent WebSocket crashes.
+    -   **Auto-Reconnect Hook**: Frontend WebSocket logic that automatically reconnects every 5 seconds in case of network drops or server restarts.
+    -   **Bulletproof Calculations**: Technical indicators now include explicit type casting and corrupted data dropping for maximum reliability.
+-   **📈 Extended Multi-Timeframe Variations**: Real-time tracking of price changes across **1h, 4h, 8h, and 24h** intervals (deprecated noisy 5m/15m charts).
 -   **📜 Persistent Signal History**: Dedicated UI panel and local storage (`signal_history.json`) to track and persist every signal change (HOLD/BUY/SELL) with price and timestamps.
--   **📈 Improved Confidence Scoring**: Re-weighted scoring system (+100% scale) reflecting divergences, trend alignment, oscillators, and volume validation.
--   **🛠️ Robust Monitoring Loop**: Enhanced backend task with per-crypto error isolation and data type safety (Numba/Pandas casting) for 24/7 uptime.
+-   **🛠️ Robust Monitoring Loop**: Enhanced background tasks with per-crypto error isolation to ensure one asset's downtime doesn't affect the entire dashboard.
 
 ## 🛠️ Tech Stack
 -   **Frontend:** React (Vite), Tailwind CSS, Lucide Icons, Fetch API.
@@ -35,7 +38,7 @@ crypto-dashboard/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/ - TickerCard, SignalHistory, TradeHistory, TradeForm
-│   │   ├── hooks/      - WebSocket & Polling state management
+│   │   ├── hooks/      - WebSocket (Auto-reconnect) & Polling management
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── package.json
@@ -63,7 +66,7 @@ docker-compose up --build
 3.  **Alerts**: Paste your Discord Webhook URL in the "Alerts" section to receive instant signal notifications.
 4.  **Trade**: Input your Binance API Key and Secret in the "Execute Order" form for manual Spot orders.
 
-## 🧠 Strategy Logic (V1.3 Confluence)
+## 🧠 Strategy Logic (V1.7 Confluence)
 To minimize false signals and "noise", the strategy now requires multiple layers of verification:
 -   **BUY Signal**: H1 RSI < 40 + Bullish MACD + (Bullish Divergence OR H4 Bullish Trend) + Volume > Volume SMA.
 -   **SELL Signal**: H1 RSI > 60 + Bearish MACD + (Bearish Divergence OR H4 Bearish Trend) + Volume > Volume SMA.
