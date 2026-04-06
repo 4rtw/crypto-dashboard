@@ -56,7 +56,7 @@ const TickerCard = ({ symbol, data }) => {
 
       {/* Probability & Winrate */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 relative overflow-hidden group cursor-help">
+        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 relative group cursor-pointer">
             <div className="relative z-10">
                 <p className="text-[10px] text-blue-500 font-black uppercase mb-1 flex items-center">
                     <Zap className="w-3 h-3 mr-1" /> Confluence
@@ -65,8 +65,8 @@ const TickerCard = ({ symbol, data }) => {
 
                 {/* Confluence Tooltip */}
                 {states?.active_confluences?.length > 0 && (
-                    <div className="absolute top-full left-0 z-50 w-56 bg-white p-3 rounded-xl shadow-2xl border border-blue-100 mt-2 hidden group-hover:block transition-all animate-in fade-in slide-in-from-top-1 duration-200">
-                        <p className="text-[9px] font-black text-blue-500 uppercase mb-2 tracking-widest border-b border-blue-50 pb-1">Active Factors</p>
+                    <div className="absolute top-full left-0 z-50 w-64 bg-white p-3 rounded-xl shadow-2xl border border-blue-100 mt-2 hidden group-hover:block transition-all animate-in fade-in slide-in-from-top-1 duration-200">
+                        <p className="text-[9px] font-black text-blue-500 uppercase mb-2 tracking-widest border-b border-blue-50 pb-1">Active Technical Factors</p>
                         <ul className="space-y-1.5">
                             {states.active_confluences.map((c, i) => (
                                 <li key={i} className="text-[10px] flex items-center font-bold text-gray-700">
@@ -78,7 +78,7 @@ const TickerCard = ({ symbol, data }) => {
                     </div>
                 )}
             </div>
-            <div className="absolute right-0 bottom-0 h-1 bg-blue-400 transition-all duration-1000" style={{ width: `${confidence}%` }}></div>
+            <div className="absolute right-0 bottom-0 h-1 bg-blue-400 transition-all duration-1000 rounded-b-xl" style={{ width: `${confidence}%` }}></div>
         </div>
         <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 relative overflow-hidden">
             <div className="relative z-10">
