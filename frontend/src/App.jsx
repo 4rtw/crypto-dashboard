@@ -21,7 +21,7 @@ function App() {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center">
               <ActivityIcon className="w-8 h-8 mr-3 text-blue-600" />
-              Crypto Dashboard <span className="ml-3 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-lg uppercase tracking-widest font-black">Spot V1.8.6</span>
+              Crypto Dashboard <span className="ml-3 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-lg uppercase tracking-widest font-black">Spot V1.9.0</span>
             </h1>
             <p className="text-sm text-gray-400 mt-1 uppercase font-black tracking-widest flex items-center">
               <GlobeIcon className="w-3 h-3 mr-2" /> Real-time Binance Surveillance

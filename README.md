@@ -7,6 +7,16 @@ A production-ready, high-performance crypto trading and surveillance dashboard f
 ![Timeframe](https://img.shields.io/badge/Timeframe-1h%2F4h%2F8h%2F24h-green)
 ![Tech](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React%20%2B%20Docker-orange)
 
+## ✨ New Features (V1.9.0)
+
+### 🏗️ V1.9.0: Architectural Overhaul & Stability
+- **Modular Architecture**: Extracted core JSON processing and numeric sanitization to a new dedicated module: `/backend/utils.py`.
+- **Production-Grade Logging**: Replaced `print` statements with a comprehensive `logging` configuration with formatted timestamps and severity levels.
+- **Performance Optimization**: Introduced a global singleton `httpx.AsyncClient` with connection pooling, significantly reducing overhead for webhooks and API calls.
+- **Security & CORS Hardening**: Restricts API access to authorized domains and methods; added a dedicated `GET /api/health` endpoint for monitoring.
+- **Enhanced Type Safety**: Full type hinting (Python typing + Pydantic) and Google-style docstrings across the backend.
+- **Improved Data Integrity**: Enhanced recursive JSON sanitizer in `utils.py` to handle NumPy types and prevent `NaN`/`Infinity` crashes.
+
 ## ✨ New Features (V1.8.6)
 
 ### 🌟 Expanded Asset Coverage
@@ -63,8 +73,9 @@ A production-ready, high-performance crypto trading and surveillance dashboard f
 ```text
 crypto-dashboard/
 ├── backend/
-│   ├── main.py        - FastAPI entrypoint & WebSocket logic
+│   ├── main.py        - FastAPI entrypoint & Global Lifecycle Management
 │   ├── logic.py       - RSI Divergence, Strategy Confluences, Signal Generation
+│   ├── utils.py       - Shared utilities: JSON safety, Numeric sanitization
 │   ├── check_market_match.py - Backtest utilities
 │   ├── backtest_full.py - Full strategy backtest
 │   ├── signal_history.json - Persistent signal changes (100 entries)
@@ -176,6 +187,7 @@ To minimize false signals, the strategy requires multiple layers of verification
   ```
 
 ### REST API
+- `GET /api/health` - Health check (uptime monitoring)
 - `POST /api/webhook` - Set Discord webhook URL
 - `GET /api/webhook` - Get current webhook
 - `POST /api/trade` - Execute manual order (requires Binance API key/secret)
@@ -253,6 +265,6 @@ MIT - Developed with ❤️ for Artware.
 
 ---
 
-**Last Updated:** 2026-04-02  
-**Version:** 1.8.6  
+**Last Updated:** 2026-04-06  
+**Version:** 1.9.0  
 **Status:** Production Ready ✅
