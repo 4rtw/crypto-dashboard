@@ -11,6 +11,7 @@ A production-ready, high-performance crypto trading and surveillance dashboard f
 
 ### 🏗️ V1.9.0: Architectural Overhaul & Stability
 - **Modular Architecture**: Extracted core JSON processing and numeric sanitization to a new dedicated module: `/backend/utils.py`.
+- **Confluence Breakdown UI**: Hovering over the Confidence score now reveals a detailed breakdown of active technical factors (RSI, MACD, Volume, etc.) contributing to the signal.
 - **Production-Grade Logging**: Replaced `print` statements with a comprehensive `logging` configuration with formatted timestamps and severity levels.
 - **Performance Optimization**: Introduced a global singleton `httpx.AsyncClient` with connection pooling, significantly reducing overhead for webhooks and API calls.
 - **Security & CORS Hardening**: Restricts API access to authorized domains and methods; added a dedicated `GET /api/health` endpoint for monitoring.

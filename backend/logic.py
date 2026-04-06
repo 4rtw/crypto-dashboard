@@ -166,31 +166,49 @@ def generate_signal_data(df: pd.DataFrame, h4_df: pd.DataFrame = None) -> tuple:
         "h4_trend": h4_trend,
         "h4_rsi": round(h4_rsi, 1),
         "macro_regime": macro_regime,
+        "active_confluences": [],
     }
 
     # Confidence Score (Dynamic based on Multiple Confluences)
     score = 0
+    active_confluences = []
     # 1. RSI Extreme
-    if rsi < 30 or rsi > 70: score += 15
-    elif rsi < 40 or rsi > 60: score += 5
+    if rsi < 30 or rsi > 70:
+        score += 15
+        active_confluences.append("RSI Extreme (+15%)")
+    elif rsi < 40 or rsi > 60:
+        score += 5
+        active_confluences.append("RSI Moderate (+5%)")
 
     # 2. RSI Divergence (Strong)
     if (divergence == "BULLISH" and rsi < 40) or (divergence == "BEARISH" and rsi > 60):
         score += 25
+        active_confluences.append("RSI Divergence (+25%)")
 
     # 3. MACD Momentum & SMA 20
-    if (macd_line > macd_signal and close > sma_20): score += 15
+    if (macd_line > macd_signal and close > sma_20):
+        score += 15
+        active_confluences.append("MACD/SMA20 Momentum (+15%)")
 
     # 4. H4 Trend Alignment (Filter)
-    if (h4_trend == "BULLISH" and close > sma_50): score += 20
-    elif (h4_trend == "BEARISH" and close < sma_50): score += 20
+    if (h4_trend == "BULLISH" and close > sma_50):
+        score += 20
+        active_confluences.append("H4 Trend Alignment (+20%)")
+    elif (h4_trend == "BEARISH" and close < sma_50):
+        score += 20
+        active_confluences.append("H4 Trend Alignment (+20%)")
 
     # 5. Volume Validation
-    if volume_ok: score += 15
+    if volume_ok:
+        score += 15
+        active_confluences.append("Volume Validation (+15%)")
 
     # 6. Trend Confluence
-    if sma_20 > sma_50: score += 10
+    if sma_20 > sma_50:
+        score += 10
+        active_confluences.append("Bullish Trend (+10%)")
 
+    states["active_confluences"] = active_confluences
     # Random micro adjustment removed for pure logic
     confidence = min(score, 100)
 
